@@ -5,8 +5,8 @@ if (process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME) {
   if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes("./dev.db")) {
     process.env.DATABASE_URL = "file:/tmp/dev.db";
   }
-} else if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = "file:./dev.db";
+} else if (!process.env.DATABASE_URL || process.env.DATABASE_URL === "file:./dev.db") {
+  process.env.DATABASE_URL = "file:./prisma/dev.db";
 }
 
 const globalForPrisma = globalThis as unknown as {

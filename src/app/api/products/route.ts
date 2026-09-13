@@ -51,6 +51,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await ensureInitialData();
     const body = await request.json();
     const { barcode, name, costPrice, sellingPrice, stockQuantity, minStockAlert, category } = body;
 

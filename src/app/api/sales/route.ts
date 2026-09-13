@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureInitialData } from "@/lib/autoSeed";
 
 export async function GET(request: Request) {
   try {
+    await ensureInitialData();
     const { searchParams } = new URL(request.url);
     const limit = Number(searchParams.get("limit")) || 50;
     const paymentType = searchParams.get("paymentType");
@@ -37,6 +39,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await ensureInitialData();
     const body = await request.json();
     const { items, paymentType, customerId } = body;
 

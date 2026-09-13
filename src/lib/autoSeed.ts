@@ -1,7 +1,126 @@
 import { prisma } from "./prisma";
 
+let isDbInitialized = false;
+
 export async function ensureInitialData() {
+  if (isDbInitialized) return;
+
   try {
+    // 1. Auto-create SQLite database tables if missing (e.g. on Netlify /tmp clean boot)
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Product" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "barcode" TEXT,
+        "name" TEXT NOT NULL,
+        "costPrice" REAL NOT NULL,
+        "sellingPrice" REAL NOT NULL,
+        "stockQuantity" REAL NOT NULL DEFAULT 0,
+        "minStockAlert" REAL NOT NULL DEFAULT 5,
+        "category" TEXT DEFAULT 'Umumiy',
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Product_barcode_key" ON "Product"("barcode");
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Customer" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "name" TEXT NOT NULL,
+        "phone" TEXT NOT NULL,
+        "address" TEXT,
+        "notes" TEXT,
+        "totalDebt" REAL NOT NULL DEFAULT 0,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "DebtTransaction" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "customerId" TEXT NOT NULL,
+        "type" TEXT NOT NULL,
+        "amount" REAL NOT NULL,
+        "description" TEXT,
+        "dueDate" DATETIME,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("customerId") REFERENCES "Customer" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Sale" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "receiptNo" TEXT NOT NULL,
+        "totalAmount" REAL NOT NULL,
+        "totalCost" REAL NOT NULL,
+        "netProfit" REAL NOT NULL,
+        "paymentType" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'COMPLETED',
+        "customerId" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ("customerId") REFERENCES "Customer" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "Sale_receiptNo_key" ON "Sale"("receiptNo");
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "SaleItem" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "saleId" TEXT NOT NULL,
+        "productId" TEXT NOT NULL,
+        "quantity" REAL NOT NULL,
+        "costPrice" REAL NOT NULL,
+        "sellingPrice" REAL NOT NULL,
+        "subtotal" REAL NOT NULL,
+        FOREIGN KEY ("saleId") REFERENCES "Sale" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+        FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "Expense" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "title" TEXT NOT NULL,
+        "amount" REAL NOT NULL,
+        "category" TEXT NOT NULL,
+        "date" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "AuditAlert" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "type" TEXT NOT NULL,
+        "message" TEXT NOT NULL,
+        "severity" TEXT NOT NULL,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "StoreConfig" (
+        "id" TEXT NOT NULL PRIMARY KEY DEFAULT 'default',
+        "storeName" TEXT NOT NULL DEFAULT 'Baraka Savdo',
+        "phone" TEXT NOT NULL DEFAULT '+998 90 123 45 67',
+        "address" TEXT NOT NULL DEFAULT 'Toshkent sh., Chilonzor 19-mavze',
+        "receiptFooter" TEXT NOT NULL DEFAULT 'Xaridingiz uchun rahmat!',
+        "telegramBotToken" TEXT DEFAULT '8808098016:AAFCiEI0ikDo5KIIFFzpbv-nCTmKDFXz9So',
+        "telegramChatId" TEXT DEFAULT '8501604479',
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    isDbInitialized = true;
+
+    // 2. Populate initial records if database is empty
     const productCount = await prisma.product.count();
     if (productCount > 0) return;
 
@@ -57,3 +176,4 @@ export async function ensureInitialData() {
     console.error("AutoSeed Error:", err);
   }
 }
+

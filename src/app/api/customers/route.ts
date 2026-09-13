@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureInitialData } from "@/lib/autoSeed";
 
 export async function GET(request: Request) {
   try {
+    await ensureInitialData();
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const withDebtOnly = searchParams.get("withDebt") === "true";
