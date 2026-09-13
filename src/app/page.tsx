@@ -10,6 +10,7 @@ import { CheckoutModal } from "@/components/pos/CheckoutModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
 import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
 import { KirimAiModal } from "@/components/kirim/KirimAiModal";
+import { ShiftCloseModal } from "@/components/pos/ShiftCloseModal";
 import { AuditAlertsBanner } from "@/components/audit/AuditAlertsBanner";
 import { 
   Search, 
@@ -18,7 +19,7 @@ import {
   RefreshCw, 
   ShoppingBag, 
   X,
-  Plus
+  ShieldCheck
 } from "lucide-react";
 import { sound } from "@/lib/sound";
 
@@ -33,6 +34,7 @@ export default function PosPage() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isKirimAiOpen, setIsKirimAiOpen] = useState(false);
+  const [isShiftCloseOpen, setIsShiftCloseOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
 
   // Zustand Store
@@ -135,6 +137,16 @@ export default function PosPage() {
               >
                 <Barcode className="w-4 h-4 text-slate-300" />
                 <span className="hidden sm:inline">Skaner</span>
+              </button>
+
+              {/* Shift Close / Z-Report Button */}
+              <button
+                onClick={() => setIsShiftCloseOpen(true)}
+                className="px-3 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 hover:bg-amber-100 font-bold text-xs flex items-center gap-1.5 transition-all"
+                title="Smenani yopish va Z-Hisobot"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-700" />
+                <span className="hidden md:inline">Smena (Z-Report)</span>
               </button>
 
               {/* Refresh Button */}
@@ -243,6 +255,11 @@ export default function PosPage() {
         isOpen={isKirimAiOpen}
         onClose={() => setIsKirimAiOpen(false)}
         onSuccess={() => fetchProducts()}
+      />
+
+      <ShiftCloseModal
+        isOpen={isShiftCloseOpen}
+        onClose={() => setIsShiftCloseOpen(false)}
       />
     </div>
   );

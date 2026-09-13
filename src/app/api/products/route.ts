@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ensureInitialData } from "@/lib/autoSeed";
 
 export async function GET(request: Request) {
   try {
+    // Auto-seed if database is fresh (e.g. on Netlify cold boot)
+    await ensureInitialData();
+
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search") || "";
     const category = searchParams.get("category") || "";
@@ -49,17 +53,9 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { barcode, name, costPrice, sellingPrice, stockQuantity, minStockAlert, category } = body;
-    const parsedCostPrice = Number(costPrice);
-    const parsedSellingPrice = Number(sellingPrice);
-    const parsedStockQuantity = stockQuantity === undefined || stockQuantity === "" ? 0 : Number(stockQuantity);
-    const parsedMinStockAlert = minStockAlert === undefined || minStockAlert === "" ? 5 : Number(minStockAlert);
 
     if (!name || costPrice === undefined || sellingPrice === undefined) {
       return NextResponse.json({ error: "Mahsulot nomi, tannarxi va sotish narxi majburiy!" }, { status: 400 });
-    }
-
-    if (!Number.isFinite(parsedCostPrice) || !Number.isFinite(parsedSellingPrice) || !Number.isFinite(parsedStockQuantity) || !Number.isFinite(parsedMinStockAlert) || parsedCostPrice < 0 || parsedSellingPrice < 0 || parsedStockQuantity < 0 || parsedMinStockAlert < 0) {
-      return NextResponse.json({ error: "Narx va qoldiq qiymatlari to'g'ri son bo'lishi kerak!" }, { status: 400 });
     }
 
     // Check duplicate barcode if provided
@@ -76,10 +72,10 @@ export async function POST(request: Request) {
       data: {
         barcode: barcode && barcode.trim() !== "" ? barcode.trim() : null,
         name: name.trim(),
-        costPrice: parsedCostPrice,
-        sellingPrice: parsedSellingPrice,
-        stockQuantity: parsedStockQuantity,
-        minStockAlert: parsedMinStockAlert,
+        costPrice: Number(costPrice) || 0,
+        sellingPrice: Number(sellingPrice) || 0,
+        stockQuantity: Number(stockQuantity) || 0,
+        minStockAlert: Number(minStockAlert) ?? 5,
         category: category || "Boshqa",
       },
     });
