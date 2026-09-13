@@ -1,0 +1,122 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id             String      @id @default(uuid())
+  barcode        String?     @unique
+  name           String
+  costPrice      Float       // Tannarx (kirim narxi)
+  sellingPrice   Float       // Sotilish narxi
+  stockQuantity  Float       @default(0)
+  minStockAlert  Float       @default(5)
+  category       String?     @default("Umumiy")
+  saleItems      SaleItem[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([category])
+  @@index([barcode])
+  @@index([name])
+}
+
+model Customer {
+  id           String            @id @default(uuid())
+  name         String
+  phone        String
+  address      String?
+  notes        String?
+  totalDebt    Float             @default(0)
+  debts        DebtTransaction[]
+  sales        Sale[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([phone])
+  @@index([name])
+  @@index([totalDebt])
+}
+
+model DebtTransaction {
+  id           String    @id @default(uuid())
+  customerId   String
+  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type         String    // "BORROW" (Qarz berildi) | "PAYMENT" (Qarz to'landi)
+  amount       Float
+  description  String?
+  dueDate      DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([customerId])
+  @@index([createdAt])
+}
+
+model Sale {
+  id           String      @id @default(uuid())
+  receiptNo    String      @unique
+  totalAmount  Float
+  totalCost    Float
+  netProfit    Float       // totalAmount - totalCost
+  paymentType  String      // "CASH", "CARD", "DEBT"
+  status       String      @default("COMPLETED") // "COMPLETED" | "CANCELLED"
+  customerId   String?
+  customer     Customer?   @relation(fields: [customerId], references: [id])
+  items        SaleItem[]
+  createdAt    DateTime    @default(now())
+
+  @@index([createdAt])
+  @@index([paymentType])
+  @@index([customerId])
+}
+
+model SaleItem {
+  id           String   @id @default(uuid())
+  saleId       String
+  sale         Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  quantity     Float
+  costPrice    Float
+  sellingPrice Float
+  subtotal     Float
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  title       String   // e.g. "Do'kon arendasi", "Svet", "Tushlik"
+  amount      Float
+  category    String   // "RENT", "UTILITIES", "SALARY", "PERSONAL", "OTHER"
+  date        DateTime @default(now())
+
+  @@index([date])
+  @@index([category])
+}
+
+model AuditAlert {
+  id          String   @id @default(uuid())
+  type        String   // "CANCELLED_SALE", "SUSPICIOUS_REFUND", "PRICE_OVERRIDE"
+  message     String
+  severity    String   // "LOW", "MEDIUM", "HIGH"
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model StoreConfig {
+  id                String   @id @default("default")
+  storeName         String   @default("Baraka Savdo")
+  phone             String   @default("+998 90 123 45 67")
+  address           String   @default("Toshkent sh., Chilonzor 19-mavze")
+  receiptFooter     String   @default("Xaridingiz uchun rahmat!")
+  telegramBotToken  String?  @default("8808098016:AAFCiEI0ikDo5KIIFFzpbv-nCTmKDFXz9So")
+  telegramChatId    String?  @default("8501604479")
+  updatedAt         DateTime @updatedAt
+}
