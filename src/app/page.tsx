@@ -12,6 +12,7 @@ import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
 import { KirimAiModal } from "@/components/kirim/KirimAiModal";
 import { ShiftCloseModal } from "@/components/pos/ShiftCloseModal";
 import { AuditAlertsBanner } from "@/components/audit/AuditAlertsBanner";
+import { MobileCartDrawer } from "@/components/pos/MobileCartDrawer";
 import { 
   Search, 
   Barcode, 
@@ -30,12 +31,13 @@ export default function PosPage() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Barchasi");
 
-  // Modals
+  // Modals & Drawers
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isKirimAiOpen, setIsKirimAiOpen] = useState(false);
   const [isShiftCloseOpen, setIsShiftCloseOpen] = useState(false);
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [completedSale, setCompletedSale] = useState<Sale | null>(null);
 
   // Zustand Store
@@ -90,7 +92,7 @@ export default function PosPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${cart.length > 0 ? "pb-28 lg:pb-0" : ""}`}>
       {/* Loss & Theft Audit Alert Banner */}
       <AuditAlertsBanner />
 
@@ -235,31 +237,51 @@ export default function PosPage() {
       {/* Floating & Pinned Bottom Checkout Bar (Always Visible on Mobile & Tablet) */}
       {cart.length > 0 && (
         <div className="fixed bottom-16 left-3 right-3 z-30 lg:hidden animate-in slide-in-from-bottom-5">
-          <button
-            onClick={() => setIsCheckoutOpen(true)}
-            className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-3.5 rounded-2xl shadow-2xl shadow-emerald-950/50 border border-emerald-400/40 flex items-center justify-between active:scale-[0.98] transition-all ring-4 ring-emerald-500/20"
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black text-sm">
+          <div className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-2.5 sm:p-3 rounded-2xl shadow-2xl shadow-emerald-950/50 border border-emerald-400/40 flex items-center justify-between ring-4 ring-emerald-500/20">
+            {/* Tap left part to view/edit cart items */}
+            <button
+              onClick={() => setIsMobileCartOpen(true)}
+              className="flex items-center gap-2.5 text-left active:opacity-80 transition-opacity"
+            >
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black text-sm relative">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-400"></span>
+                </span>
               </div>
-              <div className="text-left">
+              <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200 block">
-                  Savatchada {cart.length} xil tovar
+                  Savatcha ({cart.length} xil) ↗
                 </span>
                 <span className="text-base font-black text-white">
                   {formatMoney(cart.reduce((sum, item) => sum + item.subtotal, 0))}
                 </span>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-1.5 bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs shadow-md">
-              <span>TO'LOVGA O'TISH</span>
+            {/* Tap right part to open direct checkout */}
+            <button
+              onClick={() => setIsCheckoutOpen(true)}
+              className="flex items-center gap-1.5 bg-white text-slate-900 px-4 py-2.5 rounded-xl font-black text-xs shadow-md active:scale-95 transition-transform"
+            >
+              <span>TO'LOV</span>
               <ArrowRight className="w-4 h-4 text-emerald-600" />
-            </div>
-          </button>
+            </button>
+          </div>
         </div>
       )}
+
+      {/* Mobile Cart Drawer Bottom Sheet */}
+      <MobileCartDrawer
+        isOpen={isMobileCartOpen}
+        onClose={() => setIsMobileCartOpen(false)}
+        cart={cart}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeItem}
+        onClearCart={clearCart}
+        onOpenCheckout={() => setIsCheckoutOpen(true)}
+      />
 
       {/* Modals */}
       <CheckoutModal
