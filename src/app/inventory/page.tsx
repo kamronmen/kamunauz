@@ -6,6 +6,8 @@ import { formatMoney, CATEGORIES } from "@/lib/utils";
 import { ProductFormModal } from "@/components/inventory/ProductFormModal";
 import { KirimAiModal } from "@/components/kirim/KirimAiModal";
 import { BarcodeGeneratorModal } from "@/components/inventory/BarcodeGeneratorModal";
+import { PrintableReportModal } from "@/components/reports/PrintableReportModal";
+import { useAuthStore } from "@/store/useAuthStore";
 import { 
   Package, 
   Search, 
@@ -17,7 +19,8 @@ import {
   Edit3, 
   TrendingUp, 
   Layers,
-  Printer 
+  Printer,
+  Lock
 } from "lucide-react";
 import { sound } from "@/lib/sound";
 
@@ -28,11 +31,14 @@ export default function InventoryPage() {
   const [selectedCategory, setSelectedCategory] = useState("Barchasi");
   const [lowStockOnly, setLowStockOnly] = useState(false);
 
+  const { isOwner } = useAuthStore();
+
   // Modals
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isKirimAiOpen, setIsKirimAiOpen] = useState(false);
   const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -97,7 +103,9 @@ export default function InventoryPage() {
             <span className="text-xs font-semibold">Ombor Tannarx Qiymati</span>
             <Layers className="w-4 h-4 text-blue-600" />
           </div>
-          <p className="text-xl font-extrabold text-slate-900">{formatMoney(totalCostValuation)}</p>
+          <p className="text-xl font-extrabold text-slate-900">
+            {isOwner ? formatMoney(totalCostValuation) : "•••••• so'm"}
+          </p>
           <p className="text-[11px] text-slate-400">Jami sarmoya / kelish narxi</p>
         </div>
 
@@ -141,13 +149,23 @@ export default function InventoryPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* PDF Report Trigger */}
+          <button
+            onClick={() => setIsReportModalOpen(true)}
+            className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-all"
+            title="Ombor qoldig'i hisobotini PDF formatda chiqarish"
+          >
+            <Printer className="w-4 h-4 text-emerald-600" />
+            <span className="hidden sm:inline">PDF Ombor Hisoboti</span>
+          </button>
+
           {/* Barcode Print Trigger */}
           <button
             onClick={() => setIsBarcodeModalOpen(true)}
             className="px-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-all"
             title="Shtrix-kod narx yorliqlarini chop etish"
           >
-            <Printer className="w-4 h-4 text-slate-600" />
+            <Barcode className="w-4 h-4 text-slate-600" />
             <span className="hidden sm:inline">Shtrix-kod Yorlig'i</span>
           </button>
 
@@ -228,7 +246,7 @@ export default function InventoryPage() {
                         )}
                       </td>
                       <td className="p-3.5 text-right font-medium text-slate-600">
-                        {formatMoney(p.costPrice)}
+                        {isOwner ? formatMoney(p.costPrice) : "••••••"}
                       </td>
                       <td className="p-3.5 text-right font-extrabold text-emerald-700">
                         {formatMoney(p.sellingPrice)}
@@ -243,7 +261,7 @@ export default function InventoryPage() {
                               : "bg-emerald-50 text-emerald-700"
                           }`}
                         >
-                          {isLow && <AlertTriangle className="w-3 h-3" />}
+                          {isLow && <AlertTriangle className="w-3 h-3 text-amber-600" />}
                           {p.stockQuantity} ta
                         </span>
                       </td>
@@ -295,6 +313,12 @@ export default function InventoryPage() {
         isOpen={isBarcodeModalOpen}
         onClose={() => setIsBarcodeModalOpen(false)}
         products={products}
+      />
+
+      <PrintableReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        reportType="INVENTORY"
       />
     </div>
   );

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, RefreshCw, Store, Phone, MapPin, CheckCircle, Database, Download, Lock, Bot, Send } from "lucide-react";
+import { Settings, RefreshCw, Store, Phone, MapPin, CheckCircle, Database, Download, Lock, Bot, Send, Printer, BookOpen, Package } from "lucide-react";
 import { sound } from "@/lib/sound";
 import confetti from "canvas-confetti";
 import { useAuthStore } from "@/store/useAuthStore";
+import { PrintableReportModal } from "@/components/reports/PrintableReportModal";
 
 export default function SettingsPage() {
   const [storeName, setStoreName] = useState("Baraka Savdo");
@@ -17,6 +18,10 @@ export default function SettingsPage() {
   const [newPin, setNewPin] = useState("7777");
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // PDF Reports Modal State
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [selectedReportType, setSelectedReportType] = useState<"DAILY" | "DEBTS" | "INVENTORY">("DAILY");
 
   const { setPinCode } = useAuthStore();
 
@@ -226,22 +231,102 @@ export default function SettingsPage() {
         </div>
       </form>
 
+      {/* Official Human-Friendly PDF Reports */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b pb-3 border-slate-100">
+          <div>
+            <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <Printer className="w-4 h-4 text-emerald-600" />
+              <span>Rasmiy PDF Hisobotlar & Chop Etish</span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Odamlar tushunadigan A4 formatdagi rasmiy do'kon hujjatlari (printerda chiqarish yoki PDF saqlash)
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Daily Report Button */}
+          <button
+            onClick={() => {
+              setSelectedReportType("DAILY");
+              setIsReportModalOpen(true);
+            }}
+            className="p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50/60 border border-slate-200 hover:border-emerald-300 text-left transition-all group flex flex-col justify-between space-y-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+              <Printer className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs text-slate-900 group-hover:text-emerald-700">
+                Kunlik Savdo Hisoboti
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Bugungi tushum, naqd/karta taqsimoti va cheklar
+              </p>
+            </div>
+          </button>
+
+          {/* Debts Report Button */}
+          <button
+            onClick={() => {
+              setSelectedReportType("DEBTS");
+              setIsReportModalOpen(true);
+            }}
+            className="p-4 rounded-2xl bg-slate-50 hover:bg-amber-50/60 border border-slate-200 hover:border-amber-300 text-left transition-all group flex flex-col justify-between space-y-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs text-slate-900 group-hover:text-amber-700">
+                Nasiya Daftari Hisoboti
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Barcha qarzdorlar ro'yxati, telefonlar va summalar
+              </p>
+            </div>
+          </button>
+
+          {/* Inventory Report Button */}
+          <button
+            onClick={() => {
+              setSelectedReportType("INVENTORY");
+              setIsReportModalOpen(true);
+            }}
+            className="p-4 rounded-2xl bg-slate-50 hover:bg-sky-50/60 border border-slate-200 hover:border-sky-300 text-left transition-all group flex flex-col justify-between space-y-3"
+          >
+            <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+              <Package className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-xs text-slate-900 group-hover:text-sky-700">
+                Ombor Qoldig'i Hisoboti
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Mavjud tovarlar ro'yxati, qoldiq miqdori va narxlar
+              </p>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Backup & Export Card */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-3">
         <h3 className="font-bold text-slate-800 text-sm border-b pb-2 border-slate-100 flex items-center gap-2">
           <Download className="w-4 h-4 text-blue-600" />
-          <span>Ma'lumotlar Zaxirasini Yuklab Olish (Backup)</span>
+          <span>Texnik Zaxira Fayli (Developer JSON Backup)</span>
         </h3>
         <p className="text-xs text-slate-500">
-          Kompyuter yoki dastur qayta o'rnatilganda barcha tovarlar, qarzlar va savdo tarixini bir tugma bilan `.json` fayl sifatida saqlab oling.
+          Dasturni boshqa kompyuterga ko'chirish yoki to'liq bazani texnik `.json` formatda saqlab olish.
         </p>
 
         <button
           onClick={handleExportBackup}
-          className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs shadow-md flex items-center gap-2"
+          className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200 flex items-center gap-2 transition-colors"
         >
           <Download className="w-4 h-4" />
-          <span>Zaxira Nusxani Yuklab Olish (.json)</span>
+          <span>Texnik Zaxira (.json)</span>
         </button>
       </div>
 
@@ -264,6 +349,13 @@ export default function SettingsPage() {
           <span>1-Click Demo Baza Tiklash</span>
         </button>
       </div>
+
+      {/* Printable Report Modal */}
+      <PrintableReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        reportType={selectedReportType}
+      />
     </div>
   );
 }

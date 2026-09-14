@@ -71,7 +71,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          {/* Owner vs Cashier Lock Mode Toggle */}
+          {/* Director vs Cashier Role Toggle Badge */}
           <button
             onClick={() => {
               if (isOwner) {
@@ -81,19 +81,30 @@ export function Navbar() {
                 setShowPinModal(true);
               }
             }}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all active:scale-95 shadow-xs ${
               isOwner
-                ? "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100"
-                : "bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100"
+                ? "bg-purple-900/90 text-purple-100 border-purple-700 hover:bg-purple-800 shadow-purple-900/20"
+                : "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
             }`}
-            title={isOwner ? "Boshliq Rejimi (Ochiq)" : "Sotuvchi Rejimi (Foyda yashirilgan)"}
+            title={isOwner ? "👑 Direktor Kabineti (Barcha huquqlar ochiq) - Kassirga o'tish uchun bosing" : "👨‍💼 Kassir Ish Stoli - Direktor rejimiga o'tish uchun bosing"}
           >
-            {isOwner ? <Unlock className="w-3.5 h-3.5 text-emerald-600" /> : <Lock className="w-3.5 h-3.5 text-amber-600" />}
-            <span className="hidden sm:inline">{isOwner ? "Boshliq Rejimi" : "Sotuvchi Rejimi"}</span>
+            {isOwner ? (
+              <>
+                <span className="text-amber-300">👑</span>
+                <span>Direktor</span>
+                <span className="text-[10px] bg-purple-950 px-1.5 py-0.5 rounded text-purple-200 ml-0.5 hidden sm:inline">Admin</span>
+              </>
+            ) : (
+              <>
+                <span>👨‍💼</span>
+                <span>Kassir</span>
+                <span className="text-[10px] bg-emerald-200/80 px-1.5 py-0.5 rounded text-emerald-900 ml-0.5 hidden sm:inline">Sotuvchi</span>
+              </>
+            )}
           </button>
 
           {/* Real-time Clock */}
-          <div className="flex items-center gap-1.5 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium tracking-wide">
+          <div className="flex items-center gap-1.5 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium tracking-wide">
             <Clock className="w-3.5 h-3.5 text-slate-500" />
             <span className="font-mono font-semibold">{time || "00:00:00"}</span>
           </div>
@@ -102,7 +113,7 @@ export function Navbar() {
           <button
             onClick={toggleSound}
             title={soundEnabled ? "Ovozni o'chirish" : "Ovozni yoqish"}
-            className={`p-2 rounded-lg border transition-colors ${
+            className={`p-2 rounded-xl border transition-colors ${
               soundEnabled
                 ? "bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100"
                 : "bg-slate-100 border-slate-200 text-slate-400 hover:bg-slate-200"
@@ -113,19 +124,21 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* PIN Modal */}
+      {/* PIN Modal for Director Access */}
       {showPinModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-xs w-full p-5 space-y-4 shadow-2xl text-center">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
-              <Lock className="w-6 h-6" />
+          <div className="bg-white rounded-3xl max-w-xs w-full p-6 space-y-4 shadow-2xl text-center border border-slate-200">
+            <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center mx-auto text-xl shadow-inner">
+              👑
             </div>
             <div>
-              <h4 className="font-bold text-slate-900 text-sm">Boshliq PIN Kodini Kiriting</h4>
-              <p className="text-xs text-slate-500">Moliya va Sof Foydani ko'rish uchun (Default PIN: 7777)</p>
+              <h4 className="font-bold text-slate-900 text-base">Direktor Kabinetiga Kirish</h4>
+              <p className="text-xs text-slate-500 mt-1">
+                Sof Foyda, xarajatlar va tannarxlar maxfiy bo'limi (Standart PIN: 7777)
+              </p>
             </div>
 
-            {pinError && <p className="text-xs font-bold text-rose-600">PIN kod noto'g'ri!</p>}
+            {pinError && <p className="text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-lg">PIN kod noto'g'ri!</p>}
 
             <form onSubmit={handlePinSubmit} className="space-y-3">
               <input
@@ -135,21 +148,21 @@ export function Navbar() {
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
                 placeholder="****"
-                className="w-full text-center text-2xl font-mono tracking-widest py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                className="w-full text-center text-2xl font-mono tracking-widest py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
               />
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setShowPinModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 bg-slate-100 rounded-lg font-semibold"
+                  className="px-3.5 py-2 text-xs text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold transition-colors"
                 >
                   Bekor qilish
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 text-xs text-white bg-amber-600 rounded-lg font-bold hover:bg-amber-700"
+                  className="px-4 py-2 text-xs text-white bg-purple-700 rounded-xl font-bold hover:bg-purple-800 shadow-md transition-all"
                 >
-                  Kirish
+                  Tasdiqlash
                 </button>
               </div>
             </form>

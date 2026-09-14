@@ -4,14 +4,33 @@ import { useEffect, useState } from "react";
 import { Expense } from "@/types";
 import { formatMoney, formatDateUz, EXPENSE_CATEGORIES, getExpenseCategoryLabel } from "@/lib/utils";
 import { ExpenseFormModal } from "@/components/expenses/ExpenseFormModal";
-import { Receipt, Plus, Trash2, Wallet, Calendar } from "lucide-react";
+import { Receipt, Plus, Trash2, Wallet, Calendar, Lock, Unlock } from "lucide-react";
 import { sound } from "@/lib/sound";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  // PIN unlock state
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
+
+  const { isOwner, loginDirector } = useAuthStore();
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loginDirector(pinInput)) {
+      sound.playSuccess();
+      setPinInput("");
+      setPinError(false);
+    } else {
+      sound.playError();
+      setPinError(true);
+    }
+  };
 
   useEffect(() => {
     fetchExpenses();
@@ -50,6 +69,41 @@ export default function ExpensesPage() {
   };
 
   const totalExpenseSum = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+  if (!isOwner) {
+    return (
+      <div className="bg-white rounded-3xl border border-slate-200 p-8 max-w-md mx-auto my-12 text-center shadow-xl space-y-4">
+        <div className="w-16 h-16 rounded-3xl bg-purple-100 text-purple-700 flex items-center justify-center mx-auto text-2xl shadow-inner">
+          👑
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">Do'kon Xarajatlari (Direktor Bo'limi)</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Ushbu bo'lim faqat do'kon egasi uchun mo'ljallangan. Ko'rish uchun PIN kodni kiriting (Standart PIN: 7777).
+          </p>
+        </div>
+
+        {pinError && <p className="text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-xl">PIN kod noto'g'ri!</p>}
+
+        <form onSubmit={handleUnlock} className="space-y-3 pt-2">
+          <input
+            type="password"
+            maxLength={4}
+            value={pinInput}
+            onChange={(e) => setPinInput(e.target.value)}
+            placeholder="****"
+            className="w-full text-center text-2xl font-mono tracking-widest py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+          />
+          <button
+            type="submit"
+            className="w-full py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-md transition-all active:scale-95"
+          >
+            Direktor Rejimiga Kirish
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

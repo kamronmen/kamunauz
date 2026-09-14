@@ -3,13 +3,18 @@
 import { useEffect, useState } from "react";
 import { Customer } from "@/types";
 import { formatMoney, formatDateShort } from "@/lib/utils";
-import { Users, Search, Plus, Phone, MapPin, Trash2, Edit3, UserCheck, BookOpen } from "lucide-react";
+import { Users, Search, Plus, Phone, MapPin, Trash2, Edit3, UserCheck, BookOpen, ShoppingBag } from "lucide-react";
 import { sound } from "@/lib/sound";
+import { CustomerDebtDetailModal } from "@/components/debts/CustomerDebtDetailModal";
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+
+  // Customer items detail modal state
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
   // Create/Edit customer inline state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -169,8 +174,18 @@ export default function CustomersPage() {
               ) : (
                 customers.map((c) => (
                   <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-3.5 font-bold text-slate-900">
-                      {c.name}
+                    <td 
+                      onClick={() => {
+                        setSelectedCustomerId(c.id);
+                        setIsDetailModalOpen(true);
+                      }}
+                      className="p-3.5 font-bold text-slate-900 cursor-pointer hover:text-emerald-600 transition-colors"
+                      title="Olingan mahsulotlar va to'lovlar tarixini ko'rish"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>{c.name}</span>
+                        <ShoppingBag className="w-3.5 h-3.5 text-slate-400" />
+                      </div>
                       {c.notes && (
                         <p className="text-[10px] text-slate-400 font-normal">{c.notes}</p>
                       )}
@@ -188,6 +203,16 @@ export default function CustomersPage() {
                     </td>
                     <td className="p-3.5 text-center">
                       <div className="flex items-center justify-center gap-1">
+                        <button
+                          onClick={() => {
+                            setSelectedCustomerId(c.id);
+                            setIsDetailModalOpen(true);
+                          }}
+                          className="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition-colors"
+                          title="Olingan tovarlar va Nasiya hujjati"
+                        >
+                          <ShoppingBag className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleOpenModal(c)}
                           className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
@@ -211,6 +236,13 @@ export default function CustomersPage() {
           </table>
         </div>
       </div>
+
+      {/* Customer Itemized Detail Modal */}
+      <CustomerDebtDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        customerId={selectedCustomerId}
+      />
 
       {/* Modal */}
       {isModalOpen && (
