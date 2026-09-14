@@ -159,11 +159,11 @@ export function CartPanel({
         )}
       </div>
 
-      {/* Cart Footer / Checkout Action */}
-      <div className="p-4 border-t border-slate-200 bg-slate-50/80 space-y-3">
+      {/* Cart Footer / Checkout Action - Always Sticky & Fixed at Bottom */}
+      <div className="sticky bottom-0 z-10 p-4 border-t border-slate-200 bg-white/95 backdrop-blur-md shadow-lg space-y-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-500">Jami to'lov:</span>
-          <span className="text-xl font-extrabold text-slate-900 tracking-tight">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Jami to'lov:</span>
+          <span className="text-2xl font-black text-slate-900 tracking-tight">
             {formatMoney(totalAmount)}
           </span>
         </div>
@@ -171,14 +171,22 @@ export function CartPanel({
         <button
           onClick={onOpenCheckout}
           disabled={cart.length === 0}
-          className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg transition-all duration-150 active:scale-[0.99] ${
+          className={`w-full py-3.5 px-4 rounded-2xl font-black text-sm flex items-center justify-between shadow-xl transition-all duration-150 active:scale-[0.98] ${
             cart.length === 0
-              ? "bg-slate-300 text-slate-500 cursor-not-allowed shadow-none"
-              : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/30 hover:shadow-emerald-600/40"
+              ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+              : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/40 ring-4 ring-emerald-600/20 animate-pulse hover:animate-none"
           }`}
         >
-          <span>To'lovga o'tish</span>
-          <ArrowRight className="w-4 h-4" />
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold">
+              {totalItemsCount}
+            </span>
+            <span>TO'LOVGA O'TISH</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs font-bold opacity-90">{formatMoney(totalAmount)}</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
         </button>
       </div>
     </div>

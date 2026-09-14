@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Product, Sale } from "@/types";
-import { CATEGORIES } from "@/lib/utils";
+import { CATEGORIES, formatMoney } from "@/lib/utils";
 import { useCartStore } from "@/store/useCartStore";
 import { ProductCard } from "@/components/pos/ProductCard";
 import { CartPanel } from "@/components/pos/CartPanel";
@@ -19,7 +19,8 @@ import {
   RefreshCw, 
   ShoppingBag, 
   X,
-  ShieldCheck
+  ShieldCheck,
+  ArrowRight
 } from "lucide-react";
 import { sound } from "@/lib/sound";
 
@@ -230,6 +231,35 @@ export default function PosPage() {
           />
         </div>
       </div>
+
+      {/* Floating & Pinned Bottom Checkout Bar (Always Visible on Mobile & Tablet) */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-16 left-3 right-3 z-30 lg:hidden animate-in slide-in-from-bottom-5">
+          <button
+            onClick={() => setIsCheckoutOpen(true)}
+            className="w-full bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white p-3.5 rounded-2xl shadow-2xl shadow-emerald-950/50 border border-emerald-400/40 flex items-center justify-between active:scale-[0.98] transition-all ring-4 ring-emerald-500/20"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-black text-sm">
+                {cart.reduce((sum, item) => sum + item.quantity, 0)}
+              </div>
+              <div className="text-left">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-200 block">
+                  Savatchada {cart.length} xil tovar
+                </span>
+                <span className="text-base font-black text-white">
+                  {formatMoney(cart.reduce((sum, item) => sum + item.subtotal, 0))}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-white text-slate-900 px-4 py-2 rounded-xl font-black text-xs shadow-md">
+              <span>TO'LOVGA O'TISH</span>
+              <ArrowRight className="w-4 h-4 text-emerald-600" />
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       <CheckoutModal
