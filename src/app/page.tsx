@@ -6,6 +6,7 @@ import { CATEGORIES, formatMoney } from "@/lib/utils";
 import { useCartStore } from "@/store/useCartStore";
 import { ProductCard } from "@/components/pos/ProductCard";
 import { CartPanel } from "@/components/pos/CartPanel";
+import { FastProductsBar } from "@/components/pos/FastProductsBar";
 import { CheckoutModal } from "@/components/pos/CheckoutModal";
 import { ReceiptModal } from "@/components/pos/ReceiptModal";
 import { BarcodeScannerModal } from "@/components/pos/BarcodeScannerModal";
@@ -162,6 +163,9 @@ export default function PosPage() {
               </button>
             </div>
           </div>
+
+          {/* Fast-Pick Top Items Bar (1-Click Add) */}
+          <FastProductsBar products={products} onAddToCart={addItem} />
 
           {/* Categories Pill Bar */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">

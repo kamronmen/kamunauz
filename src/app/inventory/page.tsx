@@ -6,6 +6,7 @@ import { formatMoney, CATEGORIES } from "@/lib/utils";
 import { ProductFormModal } from "@/components/inventory/ProductFormModal";
 import { KirimAiModal } from "@/components/kirim/KirimAiModal";
 import { BarcodeGeneratorModal } from "@/components/inventory/BarcodeGeneratorModal";
+import { PriceTagModal } from "@/components/inventory/PriceTagModal";
 import { PrintableReportModal } from "@/components/reports/PrintableReportModal";
 import { useAuthStore } from "@/store/useAuthStore";
 import { 
@@ -20,7 +21,8 @@ import {
   TrendingUp, 
   Layers,
   Printer,
-  Lock
+  Lock,
+  Tag
 } from "lucide-react";
 import { sound } from "@/lib/sound";
 
@@ -38,6 +40,7 @@ export default function InventoryPage() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isKirimAiOpen, setIsKirimAiOpen] = useState(false);
   const [isBarcodeModalOpen, setIsBarcodeModalOpen] = useState(false);
+  const [isPriceTagModalOpen, setIsPriceTagModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
@@ -159,6 +162,16 @@ export default function InventoryPage() {
             <span className="hidden sm:inline">PDF Ombor Hisoboti</span>
           </button>
 
+          {/* Price Tag (Cennik) Print Trigger */}
+          <button
+            onClick={() => setIsPriceTagModalOpen(true)}
+            className="px-3 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold text-xs flex items-center gap-1.5 transition-all"
+            title="Do'kon vitrinasi uchun narx yorliqlari (cennik) chiqarish"
+          >
+            <Tag className="w-4 h-4 text-amber-700" />
+            <span className="hidden sm:inline">Vitrina Cennik</span>
+          </button>
+
           {/* Barcode Print Trigger */}
           <button
             onClick={() => setIsBarcodeModalOpen(true)}
@@ -166,7 +179,7 @@ export default function InventoryPage() {
             title="Shtrix-kod narx yorliqlarini chop etish"
           >
             <Barcode className="w-4 h-4 text-slate-600" />
-            <span className="hidden sm:inline">Shtrix-kod Yorlig'i</span>
+            <span className="hidden sm:inline">Shtrix-kod</span>
           </button>
 
           {/* Kirim AI Trigger */}
@@ -312,6 +325,12 @@ export default function InventoryPage() {
       <BarcodeGeneratorModal
         isOpen={isBarcodeModalOpen}
         onClose={() => setIsBarcodeModalOpen(false)}
+        products={products}
+      />
+
+      <PriceTagModal
+        isOpen={isPriceTagModalOpen}
+        onClose={() => setIsPriceTagModalOpen(false)}
         products={products}
       />
 
