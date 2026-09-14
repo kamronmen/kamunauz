@@ -64,17 +64,47 @@ export async function POST(request: Request) {
       let totalAmount = 0;
       let totalCost = 0;
       const saleItemsToCreate = [];
+      const stockAlertsToSend: { name: string; remaining: number }[] = [];
 
       for (const item of items) {
-        const product = await tx.product.findUnique({
+        // Resilient lookup: first by id, then barcode, then name
+        let product = await tx.product.findUnique({
           where: { id: item.productId },
         });
 
+        if (!product && item.barcode) {
+          product = await tx.product.findUnique({
+            where: { barcode: item.barcode },
+          });
+        }
+
+        if (!product && item.name) {
+          product = await tx.product.findFirst({
+            where: { name: item.name },
+          });
+        }
+
         if (!product) {
-          throw new Error(`Mahsulot topilmadi: ${item.productId}`);
+          throw new Error(
+            `"${item.name || 'Mahsulot'}" omborda topilmadi. Iltimos, savatni tozalab, tovarlarni qayta tanlang.`
+          );
         }
 
         const qty = Number(item.quantity) || 1;
+
+        // Check if out of stock or insufficient
+        if (product.stockQuantity <= 0) {
+          throw new Error(
+            `"${product.name}" mahsuloti omborda qolmagan (0 dona)!`
+          );
+        }
+
+        if (product.stockQuantity < qty) {
+          throw new Error(
+            `"${product.name}" mahsulotidan omborda yetarli qolmagan! Mavjud qoldiq: ${product.stockQuantity} dona, siz esa ${qty} dona tanladingiz.`
+          );
+        }
+
         const sellingPrice = item.sellingPrice !== undefined ? Number(item.sellingPrice) : product.sellingPrice;
         const costPrice = item.costPrice !== undefined ? Number(item.costPrice) : product.costPrice;
         const subtotal = qty * sellingPrice;
@@ -92,14 +122,18 @@ export async function POST(request: Request) {
         });
 
         // Deduct stock quantity
+        const newStock = Math.max(0, product.stockQuantity - qty);
         await tx.product.update({
           where: { id: product.id },
           data: {
-            stockQuantity: {
-              decrement: qty,
-            },
+            stockQuantity: newStock,
           },
         });
+
+        // If out of stock or low stock, record for alert
+        if (newStock <= product.minStockAlert) {
+          stockAlertsToSend.push({ name: product.name, remaining: newStock });
+        }
       }
 
       const netProfit = totalAmount - totalCost;
@@ -164,10 +198,21 @@ export async function POST(request: Request) {
         });
       }
 
-      return sale;
+      return { sale, stockAlertsToSend };
     });
 
-    return NextResponse.json(result, { status: 201 });
+    // Send Telegram notifications asynchronously in the background (zero lag for user)
+    try {
+      const { notifySaleCompleted, notifyLowStock } = await import("@/lib/telegram");
+      notifySaleCompleted(result.sale);
+      for (const alert of result.stockAlertsToSend) {
+        notifyLowStock(alert.name, alert.remaining);
+      }
+    } catch (e) {
+      console.error("Telegram notification error:", e);
+    }
+
+    return NextResponse.json(result.sale, { status: 201 });
   } catch (error: any) {
     console.error("Sales POST Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

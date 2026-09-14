@@ -147,7 +147,12 @@ export async function ensureInitialData() {
     ];
 
     for (const p of products) {
-      await prisma.product.create({ data: p });
+      await prisma.product.create({
+        data: {
+          id: `prod-${p.barcode}`,
+          ...p,
+        },
+      });
     }
 
     const customers = [

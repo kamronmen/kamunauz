@@ -71,6 +71,15 @@ export async function POST(request: Request) {
       return { transaction, updatedCustomer };
     });
 
+    if (type === "PAYMENT") {
+      try {
+        const { notifyDebtPayment } = await import("@/lib/telegram");
+        notifyDebtPayment(customer.name, numAmount, result.updatedCustomer.totalDebt);
+      } catch (e) {
+        console.error("Telegram debt alert error:", e);
+      }
+    }
+
     return NextResponse.json(result, { status: 201 });
   } catch (error: any) {
     console.error("Debts POST Error:", error);

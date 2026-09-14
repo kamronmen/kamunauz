@@ -128,6 +128,7 @@ export function CheckoutModal({
       const payload = {
         items: cart.map((item) => ({
           productId: item.product.id,
+          barcode: item.product.barcode,
           name: item.product.name,
           quantity: item.quantity,
           sellingPrice: item.product.sellingPrice,

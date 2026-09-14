@@ -41,6 +41,13 @@ export async function POST(request: Request) {
       },
     });
 
+    try {
+      const { notifyExpense } = await import("@/lib/telegram");
+      notifyExpense(expense);
+    } catch (e) {
+      console.error("Telegram expense alert error:", e);
+    }
+
     return NextResponse.json(expense, { status: 201 });
   } catch (error: any) {
     console.error("Expenses POST Error:", error);

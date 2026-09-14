@@ -17,13 +17,16 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   addItem: (product: Product, qty = 1) => {
     const { cart } = get();
-    const existingIndex = cart.findIndex((item) => item.product.id === product.id);
+    const existingIndex = cart.findIndex(
+      (item) => item.product.id === product.id || (product.barcode && item.product.barcode === product.barcode)
+    );
 
     if (existingIndex > -1) {
       const existing = cart[existingIndex];
       const newQty = existing.quantity + qty;
       if (newQty > product.stockQuantity) {
         sound.playError();
+        alert(`"${product.name}" mahsulotidan omborda boshqa qolmadi! Mavjud qoldiq: ${product.stockQuantity} ta.`);
         return;
       }
       const updated = [...cart];
@@ -36,6 +39,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     } else {
       if (product.stockQuantity < qty) {
         sound.playError();
+        alert(`"${product.name}" mahsulotidan omborda boshqa qolmadi! Mavjud qoldiq: ${product.stockQuantity} ta.`);
         return;
       }
       set({
@@ -63,6 +67,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       if (item.product.id === productId) {
         if (quantity > item.product.stockQuantity) {
           sound.playError();
+          alert(`"${item.product.name}" mahsulotidan omborda faqat ${item.product.stockQuantity} dona mavjud, boshqa qolmadi!`);
           return item;
         }
         return {
