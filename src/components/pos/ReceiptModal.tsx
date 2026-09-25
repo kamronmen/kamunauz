@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import { Sale } from "@/types";
 import { formatMoney, formatDateUz, getPaymentTypeLabel } from "@/lib/utils";
-import { X, Printer, CheckCircle, Store, Phone, MapPin } from "lucide-react";
+import { X, Printer, CheckCircle, Store, Phone, MapPin, QrCode } from "lucide-react";
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -11,6 +12,23 @@ interface ReceiptModalProps {
 }
 
 export function ReceiptModal({ isOpen, onClose, sale }: ReceiptModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === "Enter" || e.key === "p" || e.key === "P") {
+        e.preventDefault();
+        window.print();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !sale) return null;
 
   const handlePrint = () => {
@@ -107,23 +125,32 @@ export function ReceiptModal({ isOpen, onClose, sale }: ReceiptModalProps) {
             )}
           </div>
 
+          {/* Fiscal QR Code Simulation */}
+          <div className="pt-3 pb-2 flex flex-col items-center justify-center border-b border-dashed border-slate-300">
+            <div className="w-16 h-16 border-2 border-slate-900 rounded-lg p-1.5 flex flex-col items-center justify-center bg-white shadow-2xs">
+              <QrCode className="w-12 h-12 text-slate-900" />
+            </div>
+            <span className="text-[9px] font-mono text-slate-500 mt-1">OFD / E-CHEK TEKSHIRISH</span>
+          </div>
+
           {/* Receipt Footer */}
-          <div className="pt-4 text-center space-y-1 text-[11px] text-slate-600">
+          <div className="pt-3 text-center space-y-1 text-[11px] text-slate-600">
             <p className="font-bold uppercase">Xaridingiz uchun rahmat!</p>
             <p className="text-[10px] text-slate-400">DOKONPRO orqali chop etildi</p>
-            <div className="font-mono text-[10px] text-slate-400 tracking-widest pt-2">
+            <div className="font-mono text-[10px] text-slate-400 tracking-widest pt-1">
               *** BARAKA VA RIZQ TIZIMI ***
             </div>
           </div>
         </div>
 
-        {/* Footer Buttons (Excluded from print) */}
+        {/* Footer Buttons (Excluded from print) with Hotkeys */}
         <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center gap-2 no-print">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors"
+            className="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5"
           >
-            Yopish
+            <span>Yopish</span>
+            <span className="hidden sm:inline px-1.5 py-0.5 text-[10px] bg-slate-200 text-slate-600 rounded font-mono font-bold">Esc</span>
           </button>
           <button
             onClick={handlePrint}
@@ -131,6 +158,7 @@ export function ReceiptModal({ isOpen, onClose, sale }: ReceiptModalProps) {
           >
             <Printer className="w-4 h-4" />
             <span>Chop etish</span>
+            <span className="hidden sm:inline px-1.5 py-0.5 text-[10px] bg-slate-800 text-slate-200 rounded font-mono font-bold">Enter ↵</span>
           </button>
         </div>
       </div>

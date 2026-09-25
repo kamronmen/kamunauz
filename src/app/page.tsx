@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Product, Sale } from "@/types";
 import { CATEGORIES, formatMoney } from "@/lib/utils";
 import { useCartStore } from "@/store/useCartStore";
@@ -22,7 +22,8 @@ import {
   ShoppingBag, 
   X,
   ShieldCheck,
-  ArrowRight
+  ArrowRight,
+  Keyboard
 } from "lucide-react";
 import { sound } from "@/lib/sound";
 
@@ -31,6 +32,8 @@ export default function PosPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Barchasi");
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Modals & Drawers
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -43,6 +46,37 @@ export default function PosPage() {
 
   // Zustand Store
   const { cart, addItem, updateQuantity, removeItem, clearCart } = useCartStore();
+
+  // PRO Cashier Keyboard Shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+
+      if (e.key === "F1") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      } else if (e.key === "/" && !isInput) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if ((e.key === "F2" || (e.key === " " && !isInput)) && cart.length > 0 && !isCheckoutOpen && !isReceiptOpen) {
+        e.preventDefault();
+        setIsCheckoutOpen(true);
+      } else if (e.key === "F4" && !isInput) {
+        e.preventDefault();
+        setIsScannerOpen(true);
+      } else if (e.key === "F9" && !isInput && cart.length > 0) {
+        e.preventDefault();
+        if (confirm("Savatchani tozalashni tasdiqlaysizmi?")) {
+          clearCart();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [cart, isCheckoutOpen, isReceiptOpen, clearCart]);
 
   useEffect(() => {
     fetchProducts();
@@ -107,8 +141,9 @@ export default function PosPage() {
             <div className="relative flex-1 min-w-[200px]">
               <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
               <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Mahsulot nomi yoki shtrix-kod..."
+                placeholder="Mahsulot nomi yoki shtrix-kod... (F1 yoki /)"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full text-xs pl-9 pr-8 py-2.5 bg-slate-100/80 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -161,6 +196,19 @@ export default function PosPage() {
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
+            </div>
+          </div>
+
+          {/* PRO Cashier Hotkey Helper Strip */}
+          <div className="hidden sm:flex items-center justify-between text-[11px] text-slate-500 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-xl font-mono">
+            <span className="font-sans font-bold text-slate-700 flex items-center gap-1.5">
+              <Keyboard className="w-3.5 h-3.5 text-emerald-600" /> Tezkor Tugmalar:
+            </span>
+            <div className="flex items-center gap-3">
+              <span><kbd className="bg-white px-1.5 py-0.5 rounded border border-slate-300 font-bold text-slate-800 shadow-2xs">F1</kbd> Qidiruv</span>
+              <span><kbd className="bg-white px-1.5 py-0.5 rounded border border-slate-300 font-bold text-slate-800 shadow-2xs">F2 / Space</kbd> To'lov</span>
+              <span><kbd className="bg-white px-1.5 py-0.5 rounded border border-slate-300 font-bold text-slate-800 shadow-2xs">F4</kbd> Skaner</span>
+              <span><kbd className="bg-white px-1.5 py-0.5 rounded border border-slate-300 font-bold text-slate-800 shadow-2xs">F9</kbd> Tozalash</span>
             </div>
           </div>
 

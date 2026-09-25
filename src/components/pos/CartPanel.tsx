@@ -182,6 +182,7 @@ export function CartPanel({
               {totalItemsCount}
             </span>
             <span>TO'LOVGA O'TISH</span>
+            <span className="hidden sm:inline px-1.5 py-0.5 text-[10px] bg-emerald-800/80 text-emerald-100 rounded font-mono font-bold">F2</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="text-xs font-bold opacity-90">{formatMoney(totalAmount)}</span>

@@ -46,13 +46,56 @@ export function CheckoutModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [discountType, setDiscountType] = useState<"NONE" | "SUM" | "PERCENT">("NONE");
+  const [discountValue, setDiscountValue] = useState<number>(0);
+
+  // Calculate discount and payable total
+  let discountAmount = 0;
+  if (discountType === "SUM") {
+    discountAmount = Math.min(totalAmount, Math.max(0, discountValue));
+  } else if (discountType === "PERCENT") {
+    discountAmount = Math.min(totalAmount, Math.round((totalAmount * Math.min(100, Math.max(0, discountValue))) / 100));
+  }
+  const payableAmount = Math.max(0, totalAmount - discountAmount);
+
   useEffect(() => {
     if (isOpen) {
-      setCashGiven(totalAmount.toString());
+      setCashGiven(payableAmount.toString());
       fetchCustomers();
       setError(null);
     }
-  }, [isOpen, totalAmount]);
+  }, [isOpen, payableAmount]);
+
+  // Keyboard hotkeys for ultra-fast PRO cashier workflow
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is searching customer or typing name
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === "Enter" && !isInput) {
+        e.preventDefault();
+        handleCheckout();
+      } else if ((e.key === "1" || e.key === "F1") && !isInput) {
+        e.preventDefault();
+        setPaymentType("CASH");
+      } else if ((e.key === "2" || e.key === "F2") && !isInput) {
+        e.preventDefault();
+        setPaymentType("CARD");
+      } else if ((e.key === "3" || e.key === "F3") && !isInput) {
+        e.preventDefault();
+        setPaymentType("DEBT");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, paymentType, cashGiven, selectedCustomerId, cart, payableAmount]);
 
   const fetchCustomers = async () => {
     try {
@@ -69,7 +112,7 @@ export function CheckoutModal({
   if (!isOpen) return null;
 
   const numCashGiven = parseFloat(cashGiven) || 0;
-  const changeAmount = Math.max(0, numCashGiven - totalAmount);
+  const changeAmount = Math.max(0, numCashGiven - payableAmount);
 
   const quickCashAdd = (add: number) => {
     const current = parseFloat(cashGiven) || 0;
@@ -118,7 +161,7 @@ export function CheckoutModal({
       return;
     }
 
-    if (paymentType === "CASH" && numCashGiven < totalAmount) {
+    if (paymentType === "CASH" && numCashGiven < payableAmount) {
       setError("Berilgan naqd pul summasi jami to'lovdan kam bo'lishi mumkin emas!");
       return;
     }
@@ -148,10 +191,14 @@ export function CheckoutModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Savdo amalga oshmadi");
 
+      // Play rich audio chime & celebratory effects
+      sound.playCashChime();
       sound.playSuccess();
+      sound.speak(`To'lov ${formatMoney(payableAmount)}. Rahmat!`);
+
       confetti({
-        particleCount: 50,
-        spread: 60,
+        particleCount: 60,
+        spread: 70,
         origin: { y: 0.8 },
       });
 
@@ -177,31 +224,138 @@ export function CheckoutModal({
         {/* Header */}
         <div className="p-4 md:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div>
-            <h3 className="font-bold text-slate-900 text-lg">To'lovni amalga oshirish</h3>
-            <p className="text-xs text-slate-500">Jami to'lov: <span className="font-extrabold text-emerald-700 text-sm">{formatMoney(totalAmount)}</span></p>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-slate-900 text-lg">To'lovni amalga oshirish</h3>
+              <span className="text-[10px] font-mono bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-bold">PRO KASSA</span>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-slate-500">To'lanishi kerak:</span>
+              <span className="font-extrabold text-emerald-700 text-base">{formatMoney(payableAmount)}</span>
+              {discountAmount > 0 && (
+                <span className="text-xs text-slate-400 line-through">
+                  {formatMoney(totalAmount)}
+                </span>
+              )}
+            </div>
           </div>
           <button
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-slate-200/60 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+            title="Yopish [Esc]"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-5">
+        <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-4">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{error}</span>
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium">{error}</span>
+              </div>
+              <div className="flex items-center gap-2 pt-1 border-t border-red-200/60">
+                <button
+                  type="button"
+                  onClick={handleCheckout}
+                  className="px-2.5 py-1 bg-red-600 text-white rounded-lg font-bold text-[11px] hover:bg-red-700"
+                >
+                  🔄 Qayta urinish
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    onClose();
+                  }}
+                  className="px-2.5 py-1 bg-white text-red-700 border border-red-300 rounded-lg font-semibold text-[11px]"
+                >
+                  Bekor qilish
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Payment Type Selector */}
+          {/* Quick Chegirma (Discount) Bar */}
+          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/70 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700">Chegirma (Skidka):</span>
+              {discountAmount > 0 && (
+                <span className="text-xs font-black text-rose-600">
+                  -{formatMoney(discountAmount)}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => { setDiscountType("NONE"); setDiscountValue(0); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  discountType === "NONE" 
+                    ? "bg-slate-800 text-white" 
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                0%
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDiscountType("PERCENT"); setDiscountValue(3); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  discountType === "PERCENT" && discountValue === 3
+                    ? "bg-rose-600 text-white" 
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                3%
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDiscountType("PERCENT"); setDiscountValue(5); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  discountType === "PERCENT" && discountValue === 5
+                    ? "bg-rose-600 text-white" 
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                5%
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDiscountType("PERCENT"); setDiscountValue(10); }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  discountType === "PERCENT" && discountValue === 10
+                    ? "bg-rose-600 text-white" 
+                    : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                }`}
+              >
+                10%
+              </button>
+              <div className="flex items-center gap-1 ml-auto">
+                <input
+                  type="number"
+                  placeholder="So'mda..."
+                  value={discountType === "SUM" ? discountValue || "" : ""}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
+                    setDiscountType("SUM");
+                    setDiscountValue(val);
+                  }}
+                  className="w-24 px-2 py-1 text-xs border border-slate-300 rounded-lg bg-white font-bold"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Type Selector with Hotkeys */}
           <div>
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 block">
-              To'lov turi:
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+                To'lov turi:
+              </label>
+              <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">[1] Naqd | [2] Karta | [3] Qarz</span>
+            </div>
             <div className="grid grid-cols-3 gap-2.5">
               <button
                 type="button"
@@ -214,6 +368,7 @@ export function CheckoutModal({
               >
                 <Banknote className="w-6 h-6 text-emerald-600" />
                 <span className="text-xs font-bold">Naqd pul</span>
+                <span className="text-[9px] font-mono text-emerald-700/60 font-bold hidden sm:inline">[1]</span>
               </button>
 
               <button
@@ -227,6 +382,7 @@ export function CheckoutModal({
               >
                 <CreditCard className="w-6 h-6 text-blue-600" />
                 <span className="text-xs font-bold">Karta / Payme</span>
+                <span className="text-[9px] font-mono text-blue-700/60 font-bold hidden sm:inline">[2]</span>
               </button>
 
               <button
@@ -240,6 +396,7 @@ export function CheckoutModal({
               >
                 <BookOpen className="w-6 h-6 text-amber-600" />
                 <span className="text-xs font-bold">Nasiya (Qarz)</span>
+                <span className="text-[9px] font-mono text-amber-700/60 font-bold hidden sm:inline">[3]</span>
               </button>
             </div>
           </div>
@@ -264,7 +421,7 @@ export function CheckoutModal({
               <div className="flex flex-wrap gap-1.5 pt-1">
                 <button
                   type="button"
-                  onClick={() => setCashGiven(totalAmount.toString())}
+                  onClick={() => setCashGiven(payableAmount.toString())}
                   className="px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100"
                 >
                   Aniq summa
@@ -442,14 +599,15 @@ export function CheckoutModal({
           )}
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions with Hotkeys */}
         <div className="p-4 md:p-5 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-3 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors"
+            className="px-4 py-3 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-colors flex items-center gap-1.5"
           >
-            Bekor qilish
+            <span>Bekor qilish</span>
+            <span className="hidden sm:inline px-1.5 py-0.5 text-[10px] bg-slate-200 text-slate-600 rounded font-mono font-bold">Esc</span>
           </button>
           <button
             type="button"
@@ -466,6 +624,7 @@ export function CheckoutModal({
               <>
                 <Check className="w-4 h-4" />
                 <span>Savdoni tasdiqlash</span>
+                <span className="hidden sm:inline px-2 py-0.5 text-[11px] bg-emerald-800/80 text-emerald-100 rounded-md font-mono font-bold">Enter ↵</span>
               </>
             )}
           </button>

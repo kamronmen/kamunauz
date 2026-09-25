@@ -93,6 +93,40 @@ class SoundManager {
       // Ignore
     }
   }
+  playCashChime() {
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+      // High bell tone followed by register drawer snap
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(987.77, ctx.currentTime); // B5
+      osc.frequency.exponentialRampToValueAtTime(1318.51, ctx.currentTime + 0.15); // E6
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.35);
+    } catch {
+      // Ignore
+    }
+  }
+
+  speak(text: string) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      utterance.lang = "uz-UZ";
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export const sound = new SoundManager();
