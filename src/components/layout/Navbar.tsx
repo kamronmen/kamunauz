@@ -12,7 +12,23 @@ export function Navbar() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinError, setPinError] = useState(false);
 
+  const [isOnline, setIsOnline] = useState(true);
+
   const { isOwner, loginOwner, logoutOwner } = useAuthStore();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+      window.addEventListener("online", handleOnline);
+      window.addEventListener("offline", handleOffline);
+      return () => {
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+      };
+    }
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
@@ -102,6 +118,21 @@ export function Navbar() {
               </>
             )}
           </button>
+
+          {/* Online / Offline Status Indicator */}
+          <div className="hidden sm:flex items-center">
+            {isOnline ? (
+              <span className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200 shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Onlayn</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-[11px] font-bold text-rose-800 bg-rose-50 px-2.5 py-1.5 rounded-xl border border-rose-200 shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                <span>Oflayn</span>
+              </span>
+            )}
+          </div>
 
           {/* Real-time Clock */}
           <div className="flex items-center gap-1.5 bg-slate-100 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-medium tracking-wide">
